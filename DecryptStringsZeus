@@ -1,0 +1,91 @@
+#Decrypt Strings from Zeus
+#@author km3dg3
+#@category _NEW_
+#@keybinding 
+#@menupath 
+#@toolbar 
+
+##################################################################
+# Decrypt Strings from Zeus given Address and offset
+# @param start: Address in memory to jump to for encrypted string
+# @param offset: Which encrypted string to retrieve (hex val)
+# return: decrypted string
+##################################################################
+def DecryptStrings(start,offset):
+
+	#format issues resolved
+	start = int(start,0)
+	offset = int(offset)
+
+	#base address
+	baseAddr = 0x00401690
+	CharStr=""
+	#calc where need to be based on offset
+	basstart = baseAddr + offset * 8
+
+	# get key
+	key = getByte(toAddr(basstart))
+	# get length
+	length = getByte(toAddr(basstart+2))
+
+	#xorscheme
+	i = 0
+	while(i != length):
+		index = i
+		encChar=getByte(toAddr((start + i)))
+		xor = encChar ^ key ^ index
+		hexit=hex(xor & 0xff)
+		CharStr += chr(int(hexit,0))
+
+
+		i = i + 1
+
+	# pretty print statements
+	print("offset: ",hex(offset), " | " ,CharStr)
+	out = ""
+	out += str(hex(offset)) 
+	out += " | "
+	out += CharStr
+	setPreComment(toAddr(basstart),out)
+	return CharStr
+
+##################################################################
+# Get Memory Address at which encrypted string is located 
+# @param offset: Which encrypted string to retrieve (hex val)
+# return: memory location of encrypted string
+##################################################################
+def getMem(offset):
+	baseAddr = 0x00401690
+
+	# starts at xor key
+	basstart = baseAddr + offset * 8
+
+	# gets to mem addr
+	basstart += 4
+	temp = getBytes(toAddr(basstart),4)
+	temp = temp.tolist()
+
+	out = "0x"
+ 
+	i=0
+	j=3
+	length=4
+	while i < 4:
+		if (len(format(temp[j]&0xff,'x'))==1):
+			out += '0'
+		out+= format(temp[j]&0xff,'x')
+		i+=1
+		j-=1
+	return out
+
+##################################################################
+# Run
+##################################################################
+times = 230
+i = 0
+while i < times:
+	address=getMem(i)
+	DecryptStrings(address, i)
+	i+=1
+	
+	
